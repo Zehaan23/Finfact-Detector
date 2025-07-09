@@ -1,0 +1,1358 @@
+@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }        .results-container {
+            display: none;
+            text-align: center;
+        }<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinFact Detector - AI Hallucination Game</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3a0ca3;
+            --secondary: #4cc9f0;
+            --accent: #f72585;
+            --correct: #4caf50;
+            --partial: #ff9800;
+            --incorrect: #f44336;
+            --background: #f8f9fa;
+            --card: #ffffff;
+            --text: #212529;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .game-status {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background-color: var(--card);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .timer .status-value {
+            color: var(--accent);
+        }
+
+        .game-card {
+            background-color: var(--card);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .statement {
+            font-size: 1.2rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: rgba(76, 201, 240, 0.1);
+            border-left: 4px solid var(--secondary);
+            border-radius: 4px;
+        }
+
+        .topic-tag {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            padding: 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: #f1f3f5;
+        }
+
+        .option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+            width: 30px;
+            text-align: center;
+        }
+
+        .true-btn {
+            border-left: 4px solid var(--correct);
+        }
+
+        .true-btn:hover {
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+
+        .partial-btn {
+            border-left: 4px solid var(--partial);
+        }
+
+        .partial-btn:hover {
+            background-color: rgba(255, 152, 0, 0.1);
+        }
+
+        .false-btn {
+            border-left: 4px solid var(--incorrect);
+        }
+
+        .false-btn:hover {
+            background-color: rgba(244, 67, 54, 0.1);
+        }
+
+        .next-btn {
+            padding: 12px 25px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.2s ease;
+            display: block;
+            width: 100%;
+        }
+
+        .next-btn:hover {
+            background-color: #2a0a82;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .correct-feedback {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-left: 4px solid var(--correct);
+        }
+
+        .partial-feedback {
+            background-color: rgba(255, 152, 0, 0.1);
+            border-left: 4px solid var(--partial);
+        }
+
+        .incorrect-feedback {
+            background-color: rgba(244, 67, 54, 0.1);
+            border-left: 4px solid var(--incorrect);
+        }
+
+        .feedback-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .feedback-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .source {
+            margin-top: 15px;
+            font-style: italic;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .correct-statement {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: rgba(76, 175, 80, 0.05);
+            border-radius: 4px;
+        }
+
+        .prompt-improvement {
+            margin-top: 20px;
+        }
+
+        .prompt-improvement h3 {
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .prompt-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-top: 10px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .prompt-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .submit-prompt-btn, .retry-prompt-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            line-height: 1.3;
+        }
+
+        .submit-prompt-btn {
+            background-color: var(--secondary);
+            color: white;
+            flex-grow: 1;
+        }
+
+        .retry-prompt-btn {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .submit-prompt-btn small, .retry-prompt-btn small {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+
+        .submit-prompt-btn:hover {
+            background-color: #3bacce;
+            transform: translateY(-2px);
+        }
+        
+        .retry-prompt-btn:hover {
+            background-color: rgba(58, 12, 163, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .criteria-tooltip {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: rgba(58, 12, 163, 0.05);
+            border-left: 3px solid var(--primary);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .criteria-tooltip ul {
+            margin-top: 5px;
+            margin-left: 25px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .criteria-tooltip li {
+            margin-bottom: 3px;
+        }
+
+        .results-header {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .results-card {
+            background-color: var(--card);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .score-breakdown {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+
+        .score-item {
+            flex: 1;
+            min-width: 150px;
+            margin: 10px;
+            padding: 15px;
+            background-color: rgba(76, 201, 240, 0.1);
+            border-radius: 8px;
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .restart-btn {
+            padding: 15px 30px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .restart-btn:hover {
+            background-color: #d31b6e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .export-btn {
+            padding: 12px 25px;
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+            margin-left: 10px;
+        }
+
+        .export-btn:hover {
+            background-color: rgba(58, 12, 163, 0.1);
+        }
+
+        .streak-bonus {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background-color: var(--accent);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 20px rgba(247, 37, 133, 0.4);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .streak-bonus.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--background);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .finfact-detector-results {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: rgba(76, 201, 240, 0.08);
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .finfact-detector-results h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .finfact-detector-results p {
+            margin-bottom: 15px;
+        }
+        
+        .finfact-detector-results ul {
+            margin-left: 20px;
+        }
+        
+        .finfact-detector-results li {
+            margin-bottom: 8px;
+        }
+
+        .start-screen {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 30px;
+            transition: all 0.2s ease;
+        }
+
+        .start-btn:hover {
+            background-color: #2a0a82;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .instructions {
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: var(--card);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .instructions h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .game-status {
+                flex-wrap: wrap;
+            }
+
+            .status-item {
+                flex: 1;
+                min-width: 33%;
+                margin-bottom: 10px;
+            }
+
+            .status-value {
+                font-size: 1.2rem;
+            }
+
+            .option-btn {
+                padding: 12px;
+            }
+
+            .score-breakdown {
+                flex-direction: column;
+            }
+
+            .score-item {
+                margin: 5px 0;
+            }
+
+            .export-btn {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen">
+        <div class="loader"></div>
+        <p>Loading FinFact Detector...</p>
+    </div>
+
+    <div class="container">
+        <div class="start-screen">
+            <header>
+                <h1>FinFact Detector</h1>
+                <p class="subtitle">Train your eye to spot AI hallucinations in finance</p>
+            </header>
+
+            <div class="instructions">
+                <h3>How to Play</h3>
+                <ul>
+                    <li>Each round shows an AI-generated statement about finance.</li>
+                    <li>Your task is to identify if the statement is True or a Hallucination.</li>
+                    <li>After answering, you'll see the correct information and can rewrite the prompt to get better AI answers.</li>
+                    <li>Score points for correct classifications, quality prompt rewrites, and fast responses.</li>
+                    <li>Build a streak of correct answers for bonus points!</li>
+                </ul>
+            </div>
+
+            <button class="start-btn">Start Game</button>
+        </div>
+
+        <div class="game-container" style="display: none;">
+            <header>
+                <h1>FinFact Detector</h1>
+                <p class="subtitle">Train your eye to spot AI hallucinations in finance</p>
+            </header>
+
+            <div class="game-status">
+                <div class="status-item">
+                    <span class="status-label">Question</span>
+                    <span class="status-value" id="question-number">1/10</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Score</span>
+                    <span class="status-value" id="score">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Streak</span>
+                    <span class="status-value" id="streak">0</span>
+                </div>
+                <div class="status-item timer">
+                    <span class="status-label">Time</span>
+                    <span class="status-value" id="timer">30</span>
+                </div>
+            </div>
+
+            <div class="game-card">
+                <span class="topic-tag" id="topic-tag">2008 Financial Crisis</span>
+                <div class="statement" id="statement">
+                    Lehman Brothers was bailed out by the U.S. government in 2008, receiving $700 billion in emergency funds as part of the Troubled Asset Relief Program (TARP), which prevented its collapse and helped stabilize the financial system.
+                </div>
+                <div class="options">
+                    <button class="option-btn true-btn" data-option="true">
+                        <span class="option-icon">✅</span>
+                        True
+                    </button>
+                    <button class="option-btn false-btn" data-option="false">
+                        <span class="option-icon">❌</span>
+                        Hallucinated
+                    </button>
+                </div>
+
+                <div class="feedback" id="feedback">
+                    <div class="feedback-header">
+                        <span class="feedback-icon" id="feedback-icon">❌</span>
+                        <span id="feedback-title">Incorrect! This statement is a hallucination.</span>
+                    </div>
+                    <div class="correct-statement" id="correct-statement">
+                        Lehman Brothers was NOT bailed out by the U.S. government in 2008. It filed for bankruptcy on September 15, 2008. While the $700 billion Troubled Asset Relief Program (TARP) was created to address the financial crisis, it did not save Lehman Brothers.
+                    </div>
+                    <div class="source" id="source">
+                        Source: The Financial Crisis Inquiry Commission Report, U.S. Treasury Department archives
+                    </div>
+
+                    <div class="prompt-improvement">
+                        <h3>Improve the AI Prompt</h3>
+                        <p>Rewrite the prompt to help the AI generate a more accurate response about this topic:</p>
+                        <div class="criteria-tooltip">
+                            <i class="fas fa-info-circle"></i> Prompt Quality Criteria:
+                            <ul>
+                                <li>Length (20+ chars: +10, 50+ chars: +10, 100+ chars: +10)</li>
+                                <li>Specificity (asking for specific details: +15)</li>
+                                <li>Verification (requesting sources/citations: +15)</li>
+                                <li>Comparisons (asking to compare/contrast: +10)</li>
+                                <li>Timelines (requesting dates/chronology: +10)</li>
+                                <li>Addressing the specific misinformation (up to +20)</li>
+                            </ul>
+                        </div>
+                        <textarea class="prompt-input" id="prompt-input" placeholder="Write a better prompt here..."></textarea>
+                        <div class="prompt-buttons">
+                            <button class="submit-prompt-btn" id="submit-prompt">Submit Improved Prompt</button>
+                            <button class="retry-prompt-btn" id="retry-prompt" style="display: none;">Try Again</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="next-btn" id="next-btn" style="display: none;">Next Question</button>
+            </div>
+        </div>
+
+        <div class="results-container" id="results-container" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--background); z-index: 9999; overflow-y: auto;">
+            <div class="results-content" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+                <header>
+                    <h1>FinFact Detector</h1>
+                    <p class="subtitle">Results</p>
+                </header>
+
+                <div class="results-card">
+                    <h2 class="results-header">Game Complete!</h2>
+                    <div class="score-display" id="final-score">850</div>
+                    <div class="score-breakdown">
+                        <div class="score-item">
+                            <div class="score-label">Correct Answers</div>
+                            <div class="score-value" id="correct-answers">8/10</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">Prompt Quality</div>
+                            <div class="score-value" id="prompt-quality">85%</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">Avg. Response Time</div>
+                            <div class="score-value" id="avg-response-time">8.2s</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">Longest Streak</div>
+                            <div class="score-value" id="longest-streak">5</div>
+                        </div>
+                    </div>
+                    
+                    <div class="finfact-detector-results">
+                        <h3>FinFact Detector Results:</h3>
+                        <p>You've completed the training module on detecting AI hallucinations in financial statements. Remember that developing a critical eye for AI-generated content is an essential skill in today's financial landscape.</p>
+                        <p>Key takeaways:</p>
+                        <ul>
+                            <li>Always verify AI-generated financial information with reliable sources</li>
+                            <li>Be especially skeptical of specific numbers, dates, and transaction details</li>
+                            <li>When using AI tools, craft precise prompts that request verification and sources</li>
+                            <li>Remember that even "partially true" statements can contain significant errors</li>
+                        </ul>
+                    </div>
+
+                    <button class="restart-btn" id="restart-btn">Play Again</button>
+                    <button class="export-btn" id="export-btn">Export Results</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="streak-bonus" id="streak-bonus">
+        Streak Bonus: +50!
+    </div>
+
+    <script>
+        // Game data
+        const gameData = [
+            {
+                topic: "2008 Financial Crisis",
+                statement: "Lehman Brothers was bailed out by the U.S. government in 2008, receiving $700 billion in emergency funds as part of the Troubled Asset Relief Program (TARP), which prevented its collapse and helped stabilize the financial system.",
+                correctAnswer: "false",
+                correctStatement: "Lehman Brothers was NOT bailed out by the U.S. government in 2008. It filed for bankruptcy on September 15, 2008. While the $700 billion Troubled Asset Relief Program (TARP) was created to address the financial crisis, it did not save Lehman Brothers.",
+                source: "Source: The Financial Crisis Inquiry Commission Report, U.S. Treasury Department archives",
+                promptTips: "Ask specifically about which financial institutions failed vs. which ones received government bailouts during the 2008 financial crisis. Request a timeline of key events and verified data sources."
+            },
+            {
+                topic: "IPO Deal Details",
+                statement: "In 2023, Parkin Inc. had the largest IPO in history, raising over $75 billion and surpassing Saudi Aramco's previous record, with lead underwriters Goldman Sachs and JPMorgan Chase.",
+                correctAnswer: "false",
+                correctStatement: "Parkin Inc. did not have the largest IPO in history. Saudi Aramco's IPO in 2019 remains the largest, raising $29.4 billion. Parkin Inc. is a fabricated company that did not have an IPO.",
+                source: "Source: NYSE and Nasdaq IPO records, Financial Times IPO database",
+                promptTips: "Request a list of the top 5 largest IPOs in history with specific dollar amounts, dates, and exchanges where they were listed. Ask for verification from multiple financial sources."
+            },
+            {
+                topic: "AI Regulation",
+                statement: "The EU AI Act, finalized in December 2023, completely bans all generative AI models unless they provide 100% accurate outputs and have been certified by a new European AI Certification Board.",
+                correctAnswer: "false",
+                correctStatement: "The EU AI Act does not ban generative AI models. Instead, it implements a risk-based framework that places different requirements on AI systems based on their potential harm. High-risk AI systems face more stringent regulations, but there is no blanket ban on generative AI or requirement for 100% accuracy.",
+                source: "Source: Official EU AI Act documentation, European Commission website",
+                promptTips: "Ask for a summary of the actual regulatory approach in the EU AI Act with citation to specific articles. Request information about the different risk categories and what requirements apply to each."
+            },
+            {
+                topic: "OpenAI History",
+                statement: "OpenAI was founded in 2010 by Elon Musk and Sam Altman as a for-profit company, with Musk serving as CEO until 2018 when he resigned due to conflicts with Microsoft's investment strategy.",
+                correctAnswer: "false",
+                correctStatement: "OpenAI was founded in December 2015 (not 2010) as a non-profit organization by Sam Altman, Elon Musk, and others. Musk was never CEO of OpenAI. He left OpenAI's board in 2018, citing potential conflicts with Tesla's AI development. OpenAI later created a capped-profit company in 2019.",
+                source: "Source: OpenAI website, SEC filings, contemporary news articles from 2015-2019",
+                promptTips: "Request a verified timeline of OpenAI's founding with specific dates, the original corporate structure, and when/how it changed. Ask for information about all co-founders and their specific roles."
+            },
+            {
+                topic: "M&A Activity",
+                statement: "BlackRock acquired Goldman Sachs in January 2024 for $120 billion, creating the world's largest financial institution with over $20 trillion in assets under management.",
+                correctAnswer: "false",
+                correctStatement: "BlackRock did not acquire Goldman Sachs. This is a completely fabricated transaction. As of mid-2025, both BlackRock and Goldman Sachs remain separate, independent companies.",
+                source: "Source: SEC filings, company investor relations pages, major financial news outlets",
+                promptTips: "Ask for recent major M&A transactions in the financial sector with specific dates, transaction values, and regulatory approvals. Request information from verified financial news sources and SEC filings."
+            },
+            {
+                topic: "Banking Regulations",
+                statement: "The Basel IV regulations, implemented globally in 2022, require all banks to maintain a minimum capital ratio of 25% and completely prohibit proprietary trading, effectively reversing the previous Basel III framework.",
+                correctAnswer: "false",
+                correctStatement: "The Basel framework (sometimes informally called 'Basel IV') does not require a 25% capital ratio (typical requirements are between 8-15% depending on the bank's size and importance) and does not completely prohibit proprietary trading. The framework builds upon Basel III rather than reversing it, with a focus on how banks calculate risk-weighted assets.",
+                source: "Source: Bank for International Settlements (BIS) official documentation, Financial Stability Board reports",
+                promptTips: "Request specific capital requirements in the latest Basel framework with exact percentages and implementation timelines. Ask how these requirements differ from previous Basel frameworks and which activities are restricted vs. prohibited."
+            },
+            {
+                topic: "Cryptocurrency Regulation",
+                statement: "The SEC approved Bitcoin ETFs in early 2024, but mandated that all crypto exchanges must register as national securities exchanges by June 2024 or cease operations in the United States.",
+                correctAnswer: "false",
+                correctStatement: "The SEC did approve spot Bitcoin ETFs in January 2024, which began trading on U.S. exchanges. However, the SEC has not mandated that all crypto exchanges must register as national securities exchanges by June 2024 or cease operations. The regulatory framework for crypto exchanges remains under development with various ongoing enforcement actions.",
+                source: "Source: SEC press releases, court records of SEC vs. major crypto exchanges, industry compliance reports",
+                promptTips: "Ask for a factual timeline of Bitcoin ETF approvals with specific dates and the exact requirements the SEC has officially announced for cryptocurrency exchanges. Request information about ongoing regulatory cases and their current status."
+            },
+            {
+                topic: "Central Bank Digital Currencies",
+                statement: "The Federal Reserve launched a digital dollar in March 2024, becoming the first major central bank to fully implement a CBDC, with JP Morgan and Bank of America as the exclusive distribution partners.",
+                correctAnswer: "false",
+                correctStatement: "The Federal Reserve has not launched a digital dollar as of mid-2025. The Fed has been researching CBDCs and has published discussion papers, but has not committed to launching one. There is no implementation of a U.S. CBDC, and there are no 'exclusive distribution partners' for such a system.",
+                source: "Source: Federal Reserve official statements, Congressional testimony on CBDC development",
+                promptTips: "Request the current official status of the Federal Reserve's CBDC development with specific citations to Fed statements and reports. Ask for a comparison of U.S. CBDC development stage compared to other major economies."
+            },
+            {
+                topic: "ESG Investing",
+                statement: "As of January 2024, the SEC requires all publicly traded companies to have their board of directors composed of at least 50% climate scientists and to divest completely from fossil fuel investments by 2026.",
+                correctAnswer: "false",
+                correctStatement: "The SEC has no requirement for public companies to have 50% climate scientists on their boards or to divest from fossil fuels by 2026. The SEC has adopted climate disclosure rules requiring companies to report climate-related risks, but these rules do not mandate board composition or investment restrictions.",
+                source: "Source: SEC regulatory filings, official rule adoption notices, corporate governance guidelines",
+                promptTips: "Request the specific text of recent SEC rules regarding climate and ESG requirements. Ask for exact disclosure requirements versus mandated actions, with citations to the official regulatory documents."
+            },
+            {
+                topic: "ADNOC IPO",
+                statement: "ADNOC Gas completed the largest global IPO of 2023, raising $2.5 billion on the Abu Dhabi Securities Exchange, with the offering being 58 times oversubscribed.",
+                correctAnswer: "true",
+                correctStatement: "ADNOC Gas did complete the largest global IPO of 2023, raising $2.5 billion on the Abu Dhabi Securities Exchange. The offering was indeed heavily oversubscribed, approximately 58 times.",
+                source: "Source: ADNOC official statements, Abu Dhabi Securities Exchange data, Financial Times coverage",
+                promptTips: "This statement is accurate, but to verify similar claims, request specific details about IPO size, date, exchange, and level of oversubscription, with citations to the exchange's official records and company statements."
+            },
+            {
+                topic: "Corporate Bond Market",
+                statement: "In 2023, Apple issued the first-ever trillion-dollar corporate bond, with a 100-year maturity and a fixed interest rate of 0.5%, which was described by the Federal Reserve Chairman as 'dangerously destabilizing to global markets.'",
+                correctAnswer: "false",
+                correctStatement: "Apple did not issue a trillion-dollar corporate bond. The largest corporate bond issuances are typically in the tens of billions, not trillions. Apple has issued bonds, but nothing close to this size, with this maturity, or at such rates. The Federal Reserve Chairman made no such statement about Apple bonds.",
+                source: "Source: Bloomberg Bond Database, Apple Inc. SEC filings, Federal Reserve public communications",
+                promptTips: "Ask for the largest corporate bond issuances in history with specific dollar amounts, issuing companies, and dates. Request verification from bond market databases and SEC filings with exact figures."
+            },
+            {
+                topic: "Quantitative Easing",
+                statement: "The Federal Reserve completely ended all quantitative easing programs in 2020 and has since reduced its balance sheet from $9 trillion to under $1 trillion as of early 2024.",
+                correctAnswer: "false",
+                correctStatement: "The Federal Reserve did not end all quantitative easing in 2020; in fact, it expanded its balance sheet significantly during the COVID-19 pandemic. While the Fed has been reducing its balance sheet (quantitative tightening) since 2022, it remains well above $1 trillion. As of mid-2024, the Fed's balance sheet was still around $7-8 trillion.",
+                source: "Source: Federal Reserve Economic Data (FRED), Federal Reserve meeting minutes and policy statements",
+                promptTips: "Request specific Federal Reserve balance sheet figures with exact dates and amounts, citing FRED data. Ask for a timeline of QE programs and when quantitative tightening began, with data on the pace of reduction."
+            },
+            {
+                topic: "Hedge Fund Performance",
+                statement: "Renaissance Technologies' Medallion Fund has averaged annual returns of approximately 66% (before fees) from 1988-2023, making it arguably the most successful investment fund in history.",
+                correctAnswer: "true",
+                correctStatement: "Renaissance Technologies' Medallion Fund has indeed generated extraordinary returns, averaging approximately 66% annually before fees from 1988-2023, making it one of the most successful investment funds in history. The fund is only open to current and former employees of Renaissance Technologies.",
+                source: "Source: Financial industry performance databases, Wall Street Journal investigative reports, academic studies of hedge fund performance",
+                promptTips: "This statement is accurate. To verify similar performance claims, request multiple independent sources for the data, specific time periods for the returns, and clarification if returns are before or after fees."
+            },
+            {
+                topic: "Banking Crisis",
+                statement: "Silicon Valley Bank collapsed in March 2023 primarily because it had invested all of its deposits in cryptocurrency and NFTs, which crashed in value when the Federal Reserve raised interest rates.",
+                correctAnswer: "false",
+                correctStatement: "Silicon Valley Bank did collapse in March 2023, and interest rate increases by the Federal Reserve were a factor. However, SVB's investments were primarily in long-term U.S. Treasury bonds and mortgage-backed securities, not cryptocurrencies or NFTs. When interest rates rose, these bonds decreased in value, creating liquidity problems when depositors began withdrawing funds.",
+                source: "Source: FDIC reports, Silicon Valley Bank's final financial statements, Federal Reserve analysis of the banking crisis",
+                promptTips: "Request a factual breakdown of Silicon Valley Bank's asset allocation before its collapse, with percentages in each asset class. Ask for the specific sequence of events that led to the bank run, with verified timelines."
+            },
+            {
+                topic: "Financial Technology",
+                statement: "Stripe became the first fintech company to receive a full national banking charter in the U.S. in 2023, allowing it to accept deposits and make loans without partner banks.",
+                correctAnswer: "false",
+                correctStatement: "Stripe has not received a full national banking charter in the U.S. as of mid-2025. While some fintech companies have pursued various banking licenses, Stripe continues to partner with banks to offer financial services rather than operating as a chartered bank itself.",
+                source: "Source: OCC charter approvals, Stripe company announcements, fintech regulatory tracking databases",
+                promptTips: "Request a list of fintech companies that have received different types of banking charters in the U.S., with specific dates and the exact type of charter received. Ask for the current regulatory status of major payment processors like Stripe."
+            },
+        ];
+
+        // Game state
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let longestStreak = 0;
+        let timeRemaining = 90;
+        let timer;
+        let userAnswers = [];
+        let startTime;
+        let questionStartTime;
+        let totalResponseTime = 0;
+        let promptQuality = 0;
+        let totalPromptQuality = 0;
+        let gameStarted = false;
+
+        // DOM Elements
+        const loadingScreen = document.querySelector('.loading-screen');
+        const startScreen = document.querySelector('.start-screen');
+        const gameContainer = document.querySelector('.game-container');
+        const resultsContainer = document.getElementById('results-container');
+        const startBtn = document.querySelector('.start-btn');
+        const questionNumberEl = document.getElementById('question-number');
+        const scoreEl = document.getElementById('score');
+        const streakEl = document.getElementById('streak');
+        const timerEl = document.getElementById('timer');
+        const topicTagEl = document.getElementById('topic-tag');
+        const statementEl = document.getElementById('statement');
+        const optionBtns = document.querySelectorAll('.option-btn');
+        const feedbackEl = document.getElementById('feedback');
+        const feedbackIconEl = document.getElementById('feedback-icon');
+        const feedbackTitleEl = document.getElementById('feedback-title');
+        const correctStatementEl = document.getElementById('correct-statement');
+        const sourceEl = document.getElementById('source');
+        const promptInputEl = document.getElementById('prompt-input');
+        const submitPromptBtn = document.getElementById('submit-prompt');
+        const retryPromptBtn = document.getElementById('retry-prompt');
+        const nextBtn = document.getElementById('next-btn');
+        const streakBonusEl = document.getElementById('streak-bonus');
+        const restartBtn = document.getElementById('restart-btn');
+        const exportBtn = document.getElementById('export-btn');
+
+        // Results elements
+        const finalScoreEl = document.getElementById('final-score');
+        const correctAnswersEl = document.getElementById('correct-answers');
+        const promptQualityEl = document.getElementById('prompt-quality');
+        const avgResponseTimeEl = document.getElementById('avg-response-time');
+        const longestStreakEl = document.getElementById('longest-streak');
+
+        // Hide loading screen after simulated loading
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }, 1500);
+        });
+
+        // Start the game
+        startBtn.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            gameContainer.style.display = 'block';
+            startGame();
+        });
+
+        function startGame() {
+            gameStarted = true;
+            currentQuestionIndex = 0;
+            score = 0;
+            streak = 0;
+            longestStreak = 0;
+            timeRemaining = 30;
+            userAnswers = [];
+            totalResponseTime = 0;
+            totalPromptQuality = 0;
+            startTime = Date.now();
+            
+            updateScoreDisplay();
+            loadQuestion();
+            startTimer();
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= gameData.length) {
+                endGame();
+                return;
+            }
+
+            questionStartTime = Date.now();
+            
+            const currentQuestion = gameData[currentQuestionIndex];
+            
+            questionNumberEl.textContent = `${currentQuestionIndex + 1}/${gameData.length}`;
+            topicTagEl.textContent = currentQuestion.topic;
+            statementEl.textContent = currentQuestion.statement;
+            
+            // Reset UI elements
+            feedbackEl.style.display = 'none';
+            nextBtn.style.display = 'none';
+            enableOptions(true);
+            promptInputEl.value = '';
+            
+            // Reset the prompt buttons
+            submitPromptBtn.textContent = "Submit Improved Prompt";
+            submitPromptBtn.disabled = false;
+            document.getElementById('retry-prompt').style.display = 'none';
+            
+            // Reset timer to 90 seconds
+            timeRemaining = 90;
+            timerEl.textContent = timeRemaining;
+            clearInterval(timer);
+            startTimer();
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeRemaining--;
+                timerEl.textContent = timeRemaining;
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timer);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function handleTimeout() {
+            // Record answer as incorrect due to timeout
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                answer: 'timeout',
+                correct: false,
+                responseTime: 90,
+                promptQuality: 0
+            });
+            
+            // Reset streak
+            streak = 0;
+            updateScoreDisplay();
+            
+            // Show feedback
+            showFeedback('timeout');
+        }
+
+        function handleAnswer(answer) {
+            clearInterval(timer);
+            
+            const currentQuestion = gameData[currentQuestionIndex];
+            const isCorrect = answer === currentQuestion.correctAnswer;
+            const responseTime = Math.min(90, Math.round((Date.now() - questionStartTime) / 1000));
+            
+            totalResponseTime += responseTime;
+            
+            // Update streak
+            if (isCorrect) {
+                streak++;
+                if (streak > longestStreak) {
+                    longestStreak = streak;
+                }
+                
+                // Show streak bonus at 3, 5, 7, 10
+                if (streak === 3 || streak === 5 || streak === 7 || streak === 10) {
+                    const bonusPoints = streak * 10;
+                    score += bonusPoints;
+                    showStreakBonus(bonusPoints);
+                }
+                
+                // Base points for correct answer (faster answers get more points)
+                const timeBonus = Math.round((90 - responseTime) * 2);
+                score += 50 + timeBonus;
+            } else {
+                streak = 0;
+            }
+            
+            updateScoreDisplay();
+            
+            // Record user's answer
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                answer: answer,
+                correct: isCorrect,
+                responseTime: responseTime,
+                promptQuality: 0  // Will be updated when they submit a prompt
+            });
+            
+            showFeedback(answer);
+        }
+
+        function showFeedback(answer) {
+            const currentQuestion = gameData[currentQuestionIndex];
+            
+            // Disable option buttons
+            enableOptions(false);
+            
+            // Set feedback content
+            correctStatementEl.textContent = currentQuestion.correctStatement;
+            sourceEl.textContent = currentQuestion.source;
+            
+            // Set feedback styling based on answer
+            if (answer === 'timeout') {
+                feedbackEl.className = 'feedback incorrect-feedback';
+                feedbackIconEl.textContent = '⏰';
+                feedbackTitleEl.textContent = "Time's up! The correct answer is:";
+                promptInputEl.placeholder = "Write a better prompt here... (Hint: " + currentQuestion.promptTips + ")";
+                document.querySelector('.prompt-improvement').style.display = 'block';
+            } else if (answer === currentQuestion.correctAnswer) {
+                feedbackEl.className = 'feedback correct-feedback';
+                feedbackIconEl.textContent = '✅';
+                feedbackTitleEl.textContent = 'Correct!';
+                document.querySelector('.prompt-improvement').style.display = 'none';
+            } else {
+                feedbackEl.className = 'feedback incorrect-feedback';
+                feedbackIconEl.textContent = '❌';
+                
+                if (currentQuestion.correctAnswer === 'true') {
+                    feedbackTitleEl.textContent = 'Incorrect! This statement is actually True.';
+                } else {
+                    feedbackTitleEl.textContent = 'Incorrect! This statement is a Hallucination.';
+                }
+                
+                promptInputEl.placeholder = "Write a better prompt here... (Hint: " + currentQuestion.promptTips + ")";
+                document.querySelector('.prompt-improvement').style.display = 'block';
+            }
+            
+            // Show feedback and next button
+            feedbackEl.style.display = 'block';
+            nextBtn.style.display = 'block';
+        }
+
+        function enableOptions(enabled) {
+            optionBtns.forEach(btn => {
+                btn.disabled = !enabled;
+                if (enabled) {
+                    btn.classList.remove('disabled');
+                } else {
+                    btn.classList.add('disabled');
+                }
+            });
+        }
+
+        function updateScoreDisplay() {
+            scoreEl.textContent = score;
+            streakEl.textContent = streak;
+        }
+
+        function showStreakBonus(bonusPoints) {
+            streakBonusEl.textContent = `Streak Bonus: +${bonusPoints}!`;
+            streakBonusEl.classList.add('show');
+            
+            setTimeout(() => {
+                streakBonusEl.classList.remove('show');
+            }, 2000);
+        }
+
+        function evaluatePromptQuality(promptText) {
+            const currentQuestion = gameData[currentQuestionIndex];
+            const tips = currentQuestion.promptTips.toLowerCase();
+            const prompt = promptText.toLowerCase();
+            
+            // Basic evaluation criteria
+            let quality = 0;
+            let feedbackItems = [];
+            
+            // Length check (basic effort)
+            if (prompt.length > 20) {
+                quality += 10;
+                feedbackItems.push("Basic length (+10)");
+            }
+            if (prompt.length > 50) {
+                quality += 10;
+                feedbackItems.push("Good length (+10)");
+            }
+            if (prompt.length > 100) {
+                quality += 10;
+                feedbackItems.push("Comprehensive prompt (+10)");
+            }
+            
+            // Check for specific improvement techniques
+            const specificRequestPattern = /specific|exact|detailed|precise/;
+            if (specificRequestPattern.test(prompt)) {
+                quality += 15;
+                feedbackItems.push("Asks for specificity (+15)");
+            }
+            
+            const verificationPattern = /verify|validation|confirm|check|source|citation/;
+            if (verificationPattern.test(prompt)) {
+                quality += 15;
+                feedbackItems.push("Requests verification (+15)");
+            }
+            
+            const comparisonPattern = /compare|contrast|difference|versus|vs|alternative/;
+            if (comparisonPattern.test(prompt)) {
+                quality += 10;
+                feedbackItems.push("Uses comparison (+10)");
+            }
+            
+            const timelinePattern = /timeline|chronology|sequence|history|when|dates/;
+            if (timelinePattern.test(prompt)) {
+                quality += 10;
+                feedbackItems.push("Requests timeline/dates (+10)");
+            }
+            
+            // Check if it addresses the specific issue in the hallucination
+            const tipKeywords = tips.match(/\b\w{5,}\b/g) || [];
+            let keywordMatches = 0;
+            
+            tipKeywords.forEach(keyword => {
+                if (prompt.includes(keyword)) keywordMatches++;
+            });
+            
+            // Add points based on percentage of keywords matched
+            if (tipKeywords.length > 0) {
+                const matchPercentage = keywordMatches / tipKeywords.length;
+                const keywordPoints = Math.round(matchPercentage * 20);
+                quality += keywordPoints;
+                if (keywordPoints > 0) {
+                    feedbackItems.push(`Addresses key issues (+${keywordPoints})`);
+                }
+            }
+            
+            // Cap at 100
+            quality = Math.min(100, quality);
+            
+            return {
+                score: quality,
+                feedback: feedbackItems
+            };
+        }
+
+        function endGame() {
+            // Hide game container and show results container as a fullscreen overlay
+            gameContainer.style.display = 'none';
+            resultsContainer.style.display = 'block';
+            
+            // Scroll to top to ensure results are seen from the beginning
+            window.scrollTo(0, 0);
+            
+            // Calculate final stats
+            const correctCount = userAnswers.filter(answer => answer.correct).length;
+            const avgResponseTime = Math.round(totalResponseTime / userAnswers.length * 10) / 10;
+            const avgPromptQuality = Math.round(totalPromptQuality / userAnswers.length);
+            
+            // Update results display
+            finalScoreEl.textContent = score;
+            correctAnswersEl.textContent = `${correctCount}/${gameData.length}`;
+            promptQualityEl.textContent = `${avgPromptQuality}%`;
+            avgResponseTimeEl.textContent = `${avgResponseTime}s`;
+            longestStreakEl.textContent = longestStreak;
+            
+            // Add personalized feedback based on score
+            const resultsHeader = document.querySelector('.results-header');
+            const percentageCorrect = (correctCount / gameData.length) * 100;
+            let feedbackMessage = '';
+            
+            if (percentageCorrect >= 90) {
+                feedbackMessage = "Expert Hallucination Detector! 🏆";
+            } else if (percentageCorrect >= 75) {
+                feedbackMessage = "Great Job! You have a keen eye for AI misinformation. 👍";
+            } else if (percentageCorrect >= 60) {
+                feedbackMessage = "Good effort! You're developing your hallucination detection skills. 👌";
+            } else if (percentageCorrect >= 40) {
+                feedbackMessage = "Keep practicing! Spotting AI hallucinations takes time to master. 🔍";
+            } else {
+                feedbackMessage = "You need more practice identifying AI hallucinations. Don't worry, it's a skill that improves with time! 📚";
+            }
+            
+            resultsHeader.textContent = feedbackMessage;
+        }
+
+        function exportResults() {
+            const results = {
+                score: score,
+                correctAnswers: userAnswers.filter(answer => answer.correct).length,
+                totalQuestions: gameData.length,
+                avgResponseTime: Math.round(totalResponseTime / userAnswers.length * 10) / 10,
+                avgPromptQuality: Math.round(totalPromptQuality / userAnswers.length),
+                longestStreak: longestStreak,
+                date: new Date().toISOString(),
+                detailedAnswers: userAnswers.map((answer, index) => ({
+                    question: gameData[answer.questionIndex].statement,
+                    topic: gameData[answer.questionIndex].topic,
+                    userAnswer: answer.answer,
+                    correctAnswer: gameData[answer.questionIndex].correctAnswer,
+                    responseTime: answer.responseTime,
+                    promptQuality: answer.promptQuality
+                }))
+            };
+            
+            // Create JSON file for download
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(results, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "finfact_detector_results.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        // Event Listeners
+        optionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!btn.disabled) {
+                    handleAnswer(btn.dataset.option);
+                }
+            });
+        });
+
+        submitPromptBtn.addEventListener('click', () => {
+            const promptText = promptInputEl.value.trim();
+            
+            if (promptText) {
+                // Evaluate prompt quality
+                const evaluation = evaluatePromptQuality(promptText);
+                promptQuality = evaluation.score;
+                totalPromptQuality += promptQuality;
+                
+                // Update the user answer record
+                const currentIndex = userAnswers.length - 1;
+                if (currentIndex >= 0 && currentIndex < userAnswers.length) {
+                    userAnswers[currentIndex].promptQuality = promptQuality;
+                }
+                
+                // Add bonus points for good prompts
+                const promptBonus = Math.floor(promptQuality / 10);
+                score += promptBonus;
+                updateScoreDisplay();
+                
+                // Show feedback to user
+                let feedbackHtml = `Submitted! Quality: ${promptQuality}% (+${promptBonus} pts)<br><small>`;
+                if (evaluation.feedback.length > 0) {
+                    feedbackHtml += evaluation.feedback.join(", ");
+                } else {
+                    feedbackHtml += "Try to be more specific and request verification";
+                }
+                feedbackHtml += "</small>";
+                
+                submitPromptBtn.innerHTML = feedbackHtml;
+                submitPromptBtn.disabled = true;
+                
+                // Show retry button
+                retryPromptBtn.style.display = 'block';
+                
+                // Focus on next button
+                nextBtn.focus();
+            }
+        });
+        
+        retryPromptBtn.addEventListener('click', () => {
+            // Enable the submit button again
+            submitPromptBtn.textContent = "Submit Improved Prompt";
+            submitPromptBtn.disabled = false;
+            
+            // Hide retry button
+            retryPromptBtn.style.display = 'none';
+            
+            // Focus on the text area for convenience
+            promptInputEl.focus();
+            
+            // Optionally, keep the previous prompt text for editing
+            // or clear it for a fresh attempt
+            // promptInputEl.value = ''; // Uncomment to clear
+            
+            // Optionally, preselect the text for easy editing
+            promptInputEl.select();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            currentQuestionIndex++;
+            loadQuestion();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            resultsContainer.style.display = 'none';
+            gameContainer.style.display = 'block';
+            startGame();
+        });
+
+        exportBtn.addEventListener('click', exportResults);
+
+        // Shuffle game data for randomness
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        // Initialize the game (but don't start it yet)
+        shuffleArray(gameData);
+    </script>
+</body>
+</html>
