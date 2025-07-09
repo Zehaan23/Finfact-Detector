@@ -951,14 +951,29 @@
                 endGame();
                 return;
             }
+            
+            // Safety check: ensure game data exists
+            if (!gameData || !Array.isArray(gameData) || gameData.length === 0) {
+                console.error("Game data is missing or empty");
+                return;
+            }
+            
+            // Safety check: ensure the current question exists
+            if (!gameData[currentQuestionIndex]) {
+                console.error("Question data missing for index:", currentQuestionIndex);
+                // Skip to next question or end game
+                currentQuestionIndex++;
+                loadQuestion();
+                return;
+            }
 
             questionStartTime = Date.now();
             
             const currentQuestion = gameData[currentQuestionIndex];
             
             questionNumberEl.textContent = `${currentQuestionIndex + 1}/${gameData.length}`;
-            topicTagEl.textContent = currentQuestion.topic;
-            statementEl.textContent = currentQuestion.statement;
+            topicTagEl.textContent = currentQuestion.topic || "Unknown Topic";
+            statementEl.textContent = currentQuestion.statement || "No statement available";
             
             // Reset UI elements
             feedbackEl.style.display = 'none';
@@ -969,7 +984,12 @@
             // Reset the prompt buttons
             submitPromptBtn.textContent = "Submit Improved Prompt";
             submitPromptBtn.disabled = false;
-            document.getElementById('retry-prompt').style.display = 'none';
+            
+            if (retryPromptBtn) {
+                retryPromptBtn.style.display = 'none';
+            } else {
+                console.warn("Retry prompt button not found");
+            }
             
             // Reset timer to 90 seconds
             timeRemaining = 90;
@@ -979,18 +999,33 @@
         }
 
         function startTimer() {
+            if (timer) {
+                clearInterval(timer); // Clear any existing timer first
+            }
+            
             timer = setInterval(() => {
                 timeRemaining--;
                 timerEl.textContent = timeRemaining;
                 
                 if (timeRemaining <= 0) {
                     clearInterval(timer);
+                    timer = null;
                     handleTimeout();
                 }
             }, 1000);
         }
 
         function handleTimeout() {
+            // Stop the timer completely
+            clearInterval(timer);
+            timer = null;
+            
+            // Make sure currentQuestionIndex is within bounds
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameData.length) {
+                console.error("Question index out of bounds in timeout handler:", currentQuestionIndex);
+                return;
+            }
+            
             // Record answer as incorrect due to timeout
             userAnswers.push({
                 questionIndex: currentQuestionIndex,
@@ -1009,9 +1044,24 @@
         }
 
         function handleAnswer(answer) {
+            // Stop the timer immediately
             clearInterval(timer);
+            timer = null; // Clear the timer variable
+            
+            // Make sure currentQuestionIndex is within bounds
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameData.length) {
+                console.error("Question index out of bounds:", currentQuestionIndex);
+                return;
+            }
             
             const currentQuestion = gameData[currentQuestionIndex];
+            
+            // Safety check in case question data is missing
+            if (!currentQuestion) {
+                console.error("Current question data is undefined");
+                return;
+            }
+            
             const isCorrect = answer === currentQuestion.correctAnswer;
             const responseTime = Math.min(90, Math.round((Date.now() - questionStartTime) / 1000));
             
@@ -1053,21 +1103,33 @@
         }
 
         function showFeedback(answer) {
+            // Make sure currentQuestionIndex is within bounds
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameData.length) {
+                console.error("Question index out of bounds:", currentQuestionIndex);
+                return;
+            }
+            
             const currentQuestion = gameData[currentQuestionIndex];
+            
+            // Safety check in case question data is missing
+            if (!currentQuestion) {
+                console.error("Current question data is undefined");
+                return;
+            }
             
             // Disable option buttons
             enableOptions(false);
             
             // Set feedback content
-            correctStatementEl.textContent = currentQuestion.correctStatement;
-            sourceEl.textContent = currentQuestion.source;
+            correctStatementEl.textContent = currentQuestion.correctStatement || "No correct statement available";
+            sourceEl.textContent = currentQuestion.source || "Source not available";
             
             // Set feedback styling based on answer
             if (answer === 'timeout') {
                 feedbackEl.className = 'feedback incorrect-feedback';
                 feedbackIconEl.textContent = '⏰';
                 feedbackTitleEl.textContent = "Time's up! The correct answer is:";
-                promptInputEl.placeholder = "Write a better prompt here... (Hint: " + currentQuestion.promptTips + ")";
+                promptInputEl.placeholder = "Write a better prompt here... (Hint: " + (currentQuestion.promptTips || "Be specific and ask for verification") + ")";
                 document.querySelector('.prompt-improvement').style.display = 'block';
             } else if (answer === currentQuestion.correctAnswer) {
                 feedbackEl.className = 'feedback correct-feedback';
@@ -1084,7 +1146,7 @@
                     feedbackTitleEl.textContent = 'Incorrect! This statement is a Hallucination.';
                 }
                 
-                promptInputEl.placeholder = "Write a better prompt here... (Hint: " + currentQuestion.promptTips + ")";
+                promptInputEl.placeholder = "Write a better prompt here... (Hint: " + (currentQuestion.promptTips || "Be specific and ask for verification") + ")";
                 document.querySelector('.prompt-improvement').style.display = 'block';
             }
             
@@ -1119,9 +1181,21 @@
         }
 
         function evaluatePromptQuality(promptText) {
+            // Safety check to ensure we have a valid current question
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameData.length) {
+                console.error("Cannot evaluate prompt quality: index out of bounds");
+                return { score: 0, feedback: ["Error: Could not evaluate"] };
+            }
+            
             const currentQuestion = gameData[currentQuestionIndex];
-            const tips = currentQuestion.promptTips.toLowerCase();
-            const prompt = promptText.toLowerCase();
+            
+            if (!currentQuestion) {
+                console.error("Cannot evaluate prompt quality: question data missing");
+                return { score: 0, feedback: ["Error: Could not evaluate"] };
+            }
+            
+            const tips = (currentQuestion.promptTips || "").toLowerCase();
+            const prompt = (promptText || "").toLowerCase();
             
             // Basic evaluation criteria
             let quality = 0;
@@ -1167,20 +1241,22 @@
             }
             
             // Check if it addresses the specific issue in the hallucination
-            const tipKeywords = tips.match(/\b\w{5,}\b/g) || [];
-            let keywordMatches = 0;
-            
-            tipKeywords.forEach(keyword => {
-                if (prompt.includes(keyword)) keywordMatches++;
-            });
-            
-            // Add points based on percentage of keywords matched
-            if (tipKeywords.length > 0) {
-                const matchPercentage = keywordMatches / tipKeywords.length;
-                const keywordPoints = Math.round(matchPercentage * 20);
-                quality += keywordPoints;
-                if (keywordPoints > 0) {
-                    feedbackItems.push(`Addresses key issues (+${keywordPoints})`);
+            if (tips) {
+                const tipKeywords = tips.match(/\b\w{5,}\b/g) || [];
+                let keywordMatches = 0;
+                
+                tipKeywords.forEach(keyword => {
+                    if (prompt.includes(keyword)) keywordMatches++;
+                });
+                
+                // Add points based on percentage of keywords matched
+                if (tipKeywords.length > 0) {
+                    const matchPercentage = keywordMatches / tipKeywords.length;
+                    const keywordPoints = Math.round(matchPercentage * 20);
+                    quality += keywordPoints;
+                    if (keywordPoints > 0) {
+                        feedbackItems.push(`Addresses key issues (+${keywordPoints})`);
+                    }
                 }
             }
             
@@ -1266,6 +1342,12 @@
         optionBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 if (!btn.disabled) {
+                    // Stop accepting other answers
+                    enableOptions(false);
+                    // Stop the timer display from updating
+                    clearInterval(timer);
+                    timer = null;
+                    // Process the answer
                     handleAnswer(btn.dataset.option);
                 }
             });
