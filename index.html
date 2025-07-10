@@ -1,10 +1,4 @@
-@keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }        .results-container {
-            display: none;
-            text-align: center;
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -336,6 +330,18 @@
             margin-bottom: 3px;
         }
 
+        .results-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--background);
+            z-index: 9999;
+            overflow-y: auto;
+        }
+
         .results-header {
             font-size: 2rem;
             margin-bottom: 20px;
@@ -469,29 +475,9 @@
             margin-bottom: 20px;
         }
 
-        .finfact-detector-results {
-            margin: 25px 0;
-            padding: 20px;
-            background-color: rgba(76, 201, 240, 0.08);
-            border-radius: 8px;
-            text-align: left;
-        }
-        
-        .finfact-detector-results h3 {
-            color: var(--primary);
-            margin-bottom: 15px;
-        }
-        
-        .finfact-detector-results p {
-            margin-bottom: 15px;
-        }
-        
-        .finfact-detector-results ul {
-            margin-left: 20px;
-        }
-        
-        .finfact-detector-results li {
-            margin-bottom: 8px;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .start-screen {
@@ -536,6 +522,31 @@
 
         .instructions li {
             margin-bottom: 10px;
+        }
+
+        .finfact-detector-results {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: rgba(76, 201, 240, 0.08);
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .finfact-detector-results h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .finfact-detector-results p {
+            margin-bottom: 15px;
+        }
+        
+        .finfact-detector-results ul {
+            margin-left: 20px;
+        }
+        
+        .finfact-detector-results li {
+            margin-bottom: 8px;
         }
 
         /* Mobile Responsiveness */
@@ -629,7 +640,7 @@
                 </div>
                 <div class="status-item timer">
                     <span class="status-label">Time</span>
-                    <span class="status-value" id="timer">30</span>
+                    <span class="status-value" id="timer">90</span>
                 </div>
             </div>
 
@@ -878,6 +889,7 @@
         let promptQuality = 0;
         let totalPromptQuality = 0;
         let gameStarted = false;
+        let gameQuestions = [];
 
         // DOM Elements
         const loadingScreen = document.querySelector('.loading-screen');
@@ -904,7 +916,7 @@
         const streakBonusEl = document.getElementById('streak-bonus');
         const restartBtn = document.getElementById('restart-btn');
         const exportBtn = document.getElementById('export-btn');
-
+        
         // Results elements
         const finalScoreEl = document.getElementById('final-score');
         const correctAnswersEl = document.getElementById('correct-answers');
@@ -935,11 +947,16 @@
             score = 0;
             streak = 0;
             longestStreak = 0;
-            timeRemaining = 30;
+            timeRemaining = 90;
             userAnswers = [];
             totalResponseTime = 0;
             totalPromptQuality = 0;
             startTime = Date.now();
+            
+            // Shuffle and limit to 10 questions
+            shuffleArray(gameData);
+            // Create a copy of the first 10 questions to use for this game
+            gameQuestions = gameData.slice(0, 10);
             
             updateScoreDisplay();
             loadQuestion();
@@ -947,19 +964,19 @@
         }
 
         function loadQuestion() {
-            if (currentQuestionIndex >= gameData.length) {
+            if (currentQuestionIndex >= gameQuestions.length) {
                 endGame();
                 return;
             }
             
-            // Safety check: ensure game data exists
-            if (!gameData || !Array.isArray(gameData) || gameData.length === 0) {
-                console.error("Game data is missing or empty");
+            // Safety check: ensure game questions exist
+            if (!gameQuestions || !Array.isArray(gameQuestions) || gameQuestions.length === 0) {
+                console.error("Game questions are missing or empty");
                 return;
             }
             
             // Safety check: ensure the current question exists
-            if (!gameData[currentQuestionIndex]) {
+            if (!gameQuestions[currentQuestionIndex]) {
                 console.error("Question data missing for index:", currentQuestionIndex);
                 // Skip to next question or end game
                 currentQuestionIndex++;
@@ -969,9 +986,9 @@
 
             questionStartTime = Date.now();
             
-            const currentQuestion = gameData[currentQuestionIndex];
+            const currentQuestion = gameQuestions[currentQuestionIndex];
             
-            questionNumberEl.textContent = `${currentQuestionIndex + 1}/${gameData.length}`;
+            questionNumberEl.textContent = `${currentQuestionIndex + 1}/${gameQuestions.length}`;
             topicTagEl.textContent = currentQuestion.topic || "Unknown Topic";
             statementEl.textContent = currentQuestion.statement || "No statement available";
             
@@ -1021,7 +1038,7 @@
             timer = null;
             
             // Make sure currentQuestionIndex is within bounds
-            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameData.length) {
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameQuestions.length) {
                 console.error("Question index out of bounds in timeout handler:", currentQuestionIndex);
                 return;
             }
@@ -1049,12 +1066,12 @@
             timer = null; // Clear the timer variable
             
             // Make sure currentQuestionIndex is within bounds
-            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameData.length) {
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameQuestions.length) {
                 console.error("Question index out of bounds:", currentQuestionIndex);
                 return;
             }
             
-            const currentQuestion = gameData[currentQuestionIndex];
+            const currentQuestion = gameQuestions[currentQuestionIndex];
             
             // Safety check in case question data is missing
             if (!currentQuestion) {
@@ -1104,12 +1121,12 @@
 
         function showFeedback(answer) {
             // Make sure currentQuestionIndex is within bounds
-            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameData.length) {
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameQuestions.length) {
                 console.error("Question index out of bounds:", currentQuestionIndex);
                 return;
             }
             
-            const currentQuestion = gameData[currentQuestionIndex];
+            const currentQuestion = gameQuestions[currentQuestionIndex];
             
             // Safety check in case question data is missing
             if (!currentQuestion) {
@@ -1182,12 +1199,12 @@
 
         function evaluatePromptQuality(promptText) {
             // Safety check to ensure we have a valid current question
-            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameData.length) {
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= gameQuestions.length) {
                 console.error("Cannot evaluate prompt quality: index out of bounds");
                 return { score: 0, feedback: ["Error: Could not evaluate"] };
             }
             
-            const currentQuestion = gameData[currentQuestionIndex];
+            const currentQuestion = gameQuestions[currentQuestionIndex];
             
             if (!currentQuestion) {
                 console.error("Cannot evaluate prompt quality: question data missing");
@@ -1284,14 +1301,14 @@
             
             // Update results display
             finalScoreEl.textContent = score;
-            correctAnswersEl.textContent = `${correctCount}/${gameData.length}`;
+            correctAnswersEl.textContent = `${correctCount}/${gameQuestions.length}`;
             promptQualityEl.textContent = `${avgPromptQuality}%`;
             avgResponseTimeEl.textContent = `${avgResponseTime}s`;
             longestStreakEl.textContent = longestStreak;
             
             // Add personalized feedback based on score
             const resultsHeader = document.querySelector('.results-header');
-            const percentageCorrect = (correctCount / gameData.length) * 100;
+            const percentageCorrect = (correctCount / gameQuestions.length) * 100;
             let feedbackMessage = '';
             
             if (percentageCorrect >= 90) {
@@ -1313,16 +1330,16 @@
             const results = {
                 score: score,
                 correctAnswers: userAnswers.filter(answer => answer.correct).length,
-                totalQuestions: gameData.length,
+                totalQuestions: gameQuestions.length,
                 avgResponseTime: Math.round(totalResponseTime / userAnswers.length * 10) / 10,
                 avgPromptQuality: Math.round(totalPromptQuality / userAnswers.length),
                 longestStreak: longestStreak,
                 date: new Date().toISOString(),
                 detailedAnswers: userAnswers.map((answer, index) => ({
-                    question: gameData[answer.questionIndex].statement,
-                    topic: gameData[answer.questionIndex].topic,
+                    question: gameQuestions[answer.questionIndex].statement,
+                    topic: gameQuestions[answer.questionIndex].topic,
                     userAnswer: answer.answer,
-                    correctAnswer: gameData[answer.questionIndex].correctAnswer,
+                    correctAnswer: gameQuestions[answer.questionIndex].correctAnswer,
                     responseTime: answer.responseTime,
                     promptQuality: answer.promptQuality
                 }))
